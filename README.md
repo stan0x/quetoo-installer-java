@@ -1,4 +1,4 @@
-[![Build Status](http://ci.quetoo.org/buildStatus/icon?job=Quetoo-Installer)](http://ci.quetoo.org/job/Quetoo-Installer/)
+[![Build Status](https://github.com/jdolan/quetoo-installer-java/actions/workflows/build.yml/badge.svg)](https://github.com/jdolan/quetoo-installer-java/actions/workflows/build.yml)
 [![Zlib License](https://img.shields.io/badge/license-Zlib%20License-green.svg)](COPYING)
 ![This software is BETA](https://img.shields.io/badge/development_stage-BETA-yellowgreen.svg)
 
