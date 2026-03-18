@@ -2,9 +2,9 @@
 [![Zlib License](https://img.shields.io/badge/license-Zlib%20License-green.svg)](COPYING)
 ![This software is BETA](https://img.shields.io/badge/development_stage-BETA-yellowgreen.svg)
 
-# Quetoo Update
+# Quetoo Installer
 
-![Quetoo BETA](http://quetoo.org/files/15385369_1245001622212024_7988137002503923923_o.jpg)
+![Quetoo BETA](https://user-images.githubusercontent.com/643118/147579456-f045a7a3-38ed-4a51-88e3-d9ca6e4f132c.jpg)
 
 ## Overview
 
