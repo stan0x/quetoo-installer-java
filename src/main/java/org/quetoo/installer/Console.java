@@ -3,10 +3,7 @@ package org.quetoo.installer;
 import java.io.File;
 import java.util.List;
 
-import javax.swing.SwingUtilities;
-
 import io.reactivex.Observable;
-import io.reactivex.schedulers.Schedulers;
 
 /**
  * The console user interface.
@@ -43,9 +40,9 @@ public class Console {
 					).toList()
 					.doOnSuccess(this::onDeltas)
 					.flatMapObservable(Observable::fromIterable)
-			).observeOn(Schedulers.from(SwingUtilities::invokeLater));
+			);
 		
-		files.subscribe(this::onSync, this::onError, this::onComplete);
+		files.blockingSubscribe(this::onSync, this::onError, this::onComplete);
 	}
 	
 	/**
