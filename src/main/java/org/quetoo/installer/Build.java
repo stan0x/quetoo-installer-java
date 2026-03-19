@@ -91,9 +91,9 @@ public enum Build {
 			switch (SystemUtils.OS_ARCH) {
 				case "amd64":
 				case "x86_64":
-					return x86_64_pc_windows;
+					return x86_64_w64_mingw32;
 				default:
-					return i686_pc_windows;
+					return i686_w64_mingw32;
 			}
 		}
 		

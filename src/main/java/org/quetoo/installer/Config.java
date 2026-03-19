@@ -106,7 +106,7 @@ public class Config {
 			} while (file != null);
 		}
 		
-		return new File(pwd, "quetoo_java");
+		return new File(SystemUtils.USER_HOME, "quetoo_java");
 	}
 
 	/**
