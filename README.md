@@ -8,15 +8,75 @@
 
 ## Overview
 
-This repository provides a Java-based installer and update utility for [_Quetoo_](https://github.com/jdolan/quetoo).
+A cross-platform installer and update utility for [_Quetoo_](https://github.com/jdolan/quetoo). It synchronizes local game files with remote S3 buckets using intelligent delta syncing — only modified or missing files are downloaded, based on MD5 hash comparison. Both a Swing-based GUI and a headless console mode are supported.
 
-## Compiling
+Two S3 buckets are synced:
 
-This project builds with [Maven3](https://maven.apache.org/):
+- **`quetoo`** — Platform-specific binaries and libraries
+- **`quetoo-data`** — Game assets (platform-agnostic)
 
-    mvn package [-DskipTests]
+### Supported Platforms
 
-The resulting minified _uber_ `.jar` is created by the [Shade](https://maven.apache.org/plugins/maven-shade-plugin/) and [Proguard](https://github.com/wvengen/proguard-maven-plugin) Maven plugins.
+| Build name | Platform |
+|---|---|
+| `x86_64-apple-darwin` | macOS |
+| `x86_64-pc-linux` / `i686-pc-linux` | Linux |
+| `x86_64-w64-mingw32` / `i686-w64-mingw32` | Windows (MinGW) |
+| `x86_64-pc-windows` / `i686-pc-windows` | Windows (MSYS) |
+
+The platform is auto-detected from the host OS at runtime.
+
+## Requirements
+
+- Java 21 or later
+
+## Building
+
+This project builds with [Maven 3](https://maven.apache.org/):
+
+```bash
+mvn package [-DskipTests]
+```
+
+The [Shade](https://maven.apache.org/plugins/maven-shade-plugin/) plugin produces an _uber_ `.jar` with all dependencies bundled.
+
+To also minify with [ProGuard](https://github.com/wvengen/proguard-maven-plugin):
+
+```bash
+mvn -Pproguard package
+```
+
+## Usage
+
+### GUI mode (default)
+
+```bash
+java -jar quetoo-installer.jar
+```
+
+Launches a Swing UI with a progress bar, status label, and scrollable log output.
+
+### Console mode
+
+```bash
+java -jar quetoo-installer.jar --console
+```
+
+Prints sync progress to stdout and errors to stderr.
+
+### CLI Options
+
+| Option | Long | Default | Description |
+|---|---|---|---|
+| `-b` | `--build` | auto-detected | Target platform (e.g. `x86_64-w64-mingw32`) |
+| `-d` | `--dir` | OS-dependent | Installation directory |
+| `-p` | `--prune` | `false` | Remove local files not present in the remote index |
+| `-c` | `--console` | `false` | Run in console mode (no GUI) |
+
+## License
+
+See [COPYING](COPYING) for license details.
 
 ## Support
- * The IRC channel for this project is *#quetoo* on *irc.freenode.net*
+
+- The IRC channel for this project is **#quetoo** on **irc.freenode.net**
