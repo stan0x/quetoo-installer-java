@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
 /**
  * The configuration container.
@@ -49,7 +50,13 @@ public class Config {
 	 */
 	public Config(final Properties properties) {
 
-		httpClient = HttpClients.createDefault();
+		final PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager();
+		connManager.setMaxTotal(12);
+		connManager.setDefaultMaxPerRoute(12);
+
+		httpClient = HttpClients.custom()
+				.setConnectionManager(connManager)
+				.build();
 
 		codeSource = getClass().getProtectionDomain().getCodeSource();
 		jar = FileUtils.toFile(codeSource.getLocation());
@@ -79,24 +86,27 @@ public class Config {
 
 		for (File file : new File[] { jar, pwd }) {			
 			do {
-				switch (build) {
-				case x86_64_apple_darwin:
-					if (StringUtils.equalsIgnoreCase(file.getName(), "Quetoo.app")) {
-						return file;
+				if (file.isDirectory()) {
+					switch (build) {
+					case x86_64_apple_darwin:
+						if (StringUtils.equalsIgnoreCase(file.getName(), "Quetoo.app")) {
+							return file;
+						}
+						break;
+					default:
+						if (StringUtils.equalsIgnoreCase(file.getName(), "Quetoo")
+								|| StringUtils.equalsIgnoreCase(file.getName(), "quetoo_java")) {
+							return file;
+						}
+						break;
 					}
-					break;
-				default:
-					if (StringUtils.containsIgnoreCase(file.getName(), "Quetoo")) {
-						return file;
-					}
-					break;
 				}
 				
 				file = file.getParentFile();
 			} while (file != null);
 		}
 		
-		return pwd;
+		return new File(SystemUtils.USER_HOME, "quetoo_java");
 	}
 
 	/**

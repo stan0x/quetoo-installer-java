@@ -1,6 +1,7 @@
 package org.quetoo.installer.aws;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +26,7 @@ import org.quetoo.installer.Sync;
 
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Synchronizes a local file system destination with an S3 bucket.
@@ -152,11 +154,15 @@ public class S3Sync implements Sync {
 				return false;
 			}
 
-			assert (file.isFile());
+			if (!file.isFile()) {
+				return true;
+			}
 
-			final String md5 = DigestUtils.md5Hex(FileUtils.readFileToByteArray(file));
-			if (StringUtils.equals(md5, obj.getEtag())) {
-				return false;
+			try (FileInputStream fis = new FileInputStream(file)) {
+				final String md5 = DigestUtils.md5Hex(fis);
+				if (StringUtils.equals(md5, obj.getEtag())) {
+					return false;
+				}
 			}
 		}
 
@@ -184,11 +190,8 @@ public class S3Sync implements Sync {
 		} else {
 			FileUtils.forceMkdirParent(file);
 			executeHttpRequest(obj.getKey(), Collections.emptyMap(), inputStream -> {
-				FileOutputStream out = new FileOutputStream(file);
-				try {
-					return IOUtils.copy(inputStream, new FileOutputStream(file));
-				} finally {
-					out.close();
+				try (FileOutputStream out = new FileOutputStream(file)) {
+					return IOUtils.copy(inputStream, out);
 				}
 			});
 		}
@@ -209,19 +212,20 @@ public class S3Sync implements Sync {
 			while (true) {
 
 				final S3Bucket bucket = new S3Bucket(this, executeHttpRequest("", params, S3::getDocument));
+				final int rawCount = bucket.count();
 
 				if (predicate != null) {
+					params.put("marker", bucket.getMarker());
 					source.onNext(bucket.filter(predicate));
 				} else {
+					params.put("marker", bucket.getMarker());
 					source.onNext(bucket);
 				}
 
-				if (bucket.count() < 1000) {
+				if (rawCount < 1000) {
 					source.onComplete();
 					break;
 				}
-
-				params.put("marker", bucket.getMarker());
 			}
 		});
 	}
@@ -241,7 +245,10 @@ public class S3Sync implements Sync {
 
 	@Override
 	public Observable<File> sync(final Delta delta) {
-		return Observable.fromIterable(delta).map(asset -> (S3Object) asset).map(this::sync);
+		return Observable.fromIterable(delta)
+				.map(asset -> (S3Object) asset)
+				.flatMap(obj -> Observable.fromCallable(() -> sync(obj))
+						.subscribeOn(Schedulers.io()), 8);
 	}
 
 	@Override

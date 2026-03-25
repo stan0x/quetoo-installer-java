@@ -30,7 +30,11 @@ public class S3 {
 	 */
 	public static DocumentBuilder getDocumentBuilder() throws IOException {
 		try {
-			return DocumentBuilderFactory.newInstance().newDocumentBuilder();
+			final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+			factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+			return factory.newDocumentBuilder();
 		} catch (ParserConfigurationException pce) {
 			throw new IOException(pce);
 		}

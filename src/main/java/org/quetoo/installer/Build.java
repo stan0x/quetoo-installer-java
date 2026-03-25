@@ -87,16 +87,6 @@ public enum Build {
 			}
 		}
 		
-		else if (SystemUtils.IS_OS_WINDOWS_10) {
-			switch (SystemUtils.OS_ARCH) {
-				case "amd64":
-				case "x86_64":
-					return x86_64_pc_windows;
-				default:
-					return i686_pc_linux;
-			}
-		}
-		
 		else if (SystemUtils.IS_OS_WINDOWS) {
 			switch (SystemUtils.OS_ARCH) {
 				case "amd64":
