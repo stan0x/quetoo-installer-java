@@ -8,7 +8,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.quetoo.installer.Asset;
 import org.quetoo.installer.Delta;
@@ -16,6 +15,7 @@ import org.quetoo.installer.Index;
 import org.quetoo.installer.Sync;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,18 +61,27 @@ public class S3Sync implements Sync {
   private <T> T executeHttpRequest(final String path, final Map<String, String> params,
                                    final ResponseHandler<T> handler) throws IOException {
 
-    final URIBuilder uri = new URIBuilder()
-        .setScheme("https")
-        .setHost(bucketName + ".s3.amazonaws.com/")
-        .setPath(path);
+    final StringBuilder url = new StringBuilder()
+        .append("https://")
+        .append(bucketName)
+        .append(".s3.amazonaws.com/")
+        .append(path.replace("+", "%2B"));
 
-    params.forEach(uri::setParameter);
+    if (!params.isEmpty()) {
+      url.append("?");
+      params.forEach((k, v) -> {
+        if (url.charAt(url.length() - 1) != '?') {
+          url.append("&");
+        }
+        url.append(k).append("=").append(v.replace("+", "%2B"));
+      });
+    }
 
     try {
-      return httpClient.execute(new HttpGet(uri.build()), res -> {
+      return httpClient.execute(new HttpGet(URI.create(url.toString())), res -> {
         return handler.handleResponse(res.getEntity().getContent());
       });
-    } catch (URISyntaxException e) {
+    } catch (Exception e) {
       throw new IOException(e);
     }
   }
