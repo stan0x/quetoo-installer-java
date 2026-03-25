@@ -88,8 +88,8 @@ public class Console {
    * @param throwable The error.
    */
   private void onError(final Throwable throwable) {
+    System.err.println("Error: " + throwable.getMessage());
     throwable.printStackTrace(System.err);
-    System.exit(1);
   }
 
   /**
