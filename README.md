@@ -17,12 +17,11 @@ Two S3 buckets are synced:
 
 ### Supported Platforms
 
-| Build name | Platform |
-|---|---|
-| `x86_64-apple-darwin` | macOS |
-| `x86_64-pc-linux` / `i686-pc-linux` | Linux |
-| `x86_64-w64-mingw32` / `i686-w64-mingw32` | Windows (MinGW) |
-| `x86_64-pc-windows` / `i686-pc-windows` | Windows (MSYS) |
+| Build name             | Platform |
+|------------------------|---|
+| `arm64-apple-darwin`   | macOS |
+| `x86_64-pc-linux`      | Linux |
+| `x86_64-pc-windows`    | Windows |
 
 The platform is auto-detected from the host OS at runtime.
 
@@ -79,4 +78,4 @@ See [COPYING](COPYING) for license details.
 
 ## Support
 
-- The IRC channel for this project is **#quetoo** on **irc.freenode.net**
+- Join the [Quetoo Discord](https://discord.gg/unb9U4b)
