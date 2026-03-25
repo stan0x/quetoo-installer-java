@@ -25,7 +25,7 @@ jobs:
         cache: maven
 
     - name: Build
-      run: mvn -B package
+      run: mvn -B package -Pproguard
 
     - name: Upload artifact
       uses: actions/upload-artifact@v6
