@@ -1,10 +1,13 @@
 package org.quetoo.installer;
 
+import io.reactivex.exceptions.UndeliverableException;
+import io.reactivex.plugins.RxJavaPlugins;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.util.Properties;
 
@@ -23,6 +26,19 @@ public class Main {
    * @param args The command line arguments.
    */
   public static void main(String[] args) {
+
+    RxJavaPlugins.setErrorHandler(e -> {
+      if (e instanceof UndeliverableException) {
+        e = e.getCause();
+      }
+      if (e instanceof InterruptedException
+          || e instanceof IOException
+          || e instanceof SocketException) {
+        return;
+      }
+      Thread.currentThread().getUncaughtExceptionHandler()
+          .uncaughtException(Thread.currentThread(), e);
+    });
 
     final var build = Option.builder("b")
         .longOpt("build")

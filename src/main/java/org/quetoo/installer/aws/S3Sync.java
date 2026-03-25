@@ -65,7 +65,7 @@ public class S3Sync implements Sync {
         .append("https://")
         .append(bucketName)
         .append(".s3.amazonaws.com/")
-        .append(path.replace("+", "%2B"));
+        .append(path.replace("+", "%2B").replace(" ", "%20"));
 
     if (!params.isEmpty()) {
       url.append("?");
@@ -73,7 +73,7 @@ public class S3Sync implements Sync {
         if (url.charAt(url.length() - 1) != '?') {
           url.append("&");
         }
-        url.append(k).append("=").append(v.replace("+", "%2B"));
+        url.append(k).append("=").append(v.replace("+", "%2B").replace(" ", "%20"));
       });
     }
 
@@ -200,7 +200,11 @@ public class S3Sync implements Sync {
     return Observable.fromIterable(delta)
         .map(asset -> (S3Object) asset)
         .flatMap(obj -> Observable.fromCallable(() -> sync(obj))
-            .subscribeOn(Schedulers.io()), 8);
+            .subscribeOn(Schedulers.io())
+            .onErrorResumeNext(e -> {
+              System.err.println("Failed to sync " + obj.getKey() + ": " + e.getMessage());
+              return Observable.empty();
+            }), 8);
   }
 
   @Override
