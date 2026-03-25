@@ -1,38 +1,37 @@
 package org.quetoo.installer;
 
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
+import java.io.Serial;
 
 /**
  * The top level container for the user interface.
- * 
+ *
  * @author jdolan
  */
 public class Frame extends JFrame {
 
-	private static final long serialVersionUID = 1L;
+  @Serial
+  private static final long serialVersionUID = 1L;
 
-	private final Panel panel;
+  /**
+   * Instantiates a {@link Frame} with the specified {@link Manager}
+   *
+   * @param manager The Manager.
+   */
+  public Frame(final Manager manager) {
 
-	/**
-	 * Instantiates a {@link Frame} with the specified {@link Manager}
-	 * 
-	 * @param manager The Manager.
-	 */
-	public Frame(final Manager manager) {
+    super(Config.NAME + " " + Config.VERSION);
 
-		super(Config.NAME + " " + Config.VERSION);
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    final var panel = new Panel(manager);
 
-		panel = new Panel(manager);
+    setContentPane(panel);
 
-		setContentPane(panel);
+    pack();
+    setLocationRelativeTo(null);
+    setVisible(true);
 
-		pack();
-		setLocationRelativeTo(null);
-		setVisible(true);
-
-		SwingUtilities.invokeLater(panel::update);
-	}
+    SwingUtilities.invokeLater(panel::update);
+  }
 }
