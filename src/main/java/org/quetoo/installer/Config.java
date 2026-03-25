@@ -1,185 +1,187 @@
 package org.quetoo.installer;
 
-import java.io.File;
-import java.security.CodeSource;
-import java.util.Properties;
-	
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
+import java.io.File;
+import java.nio.file.Paths;
+import java.security.CodeSource;
+import java.util.Properties;
+
 /**
  * The configuration container.
- * 
+ *
  * @author jdolan
  */
 public class Config {
 
-	public static final String NAME = "Quetoo Installer";
-	public static final String VERSION = "1.0.0";
+  public static final String NAME = "Quetoo Installer";
+  public static final String VERSION = "1.0.0";
 
-	public static final String BUILD = "quetoo.installer.build";
-	public static final String DIR = "quetoo.installer.dir";
-	public static final String PRUNE = "quetoo.installer.prune";
-	public static final String CONSOLE = "quetoo.installer.console";
+  public static final String BUILD = "quetoo.installer.build";
+  public static final String DIR = "quetoo.installer.dir";
+  public static final String PRUNE = "quetoo.installer.prune";
+  public static final String CONSOLE = "quetoo.installer.console";
 
-	private static final Config defaults = new Config();
+  private static final Config defaults = new Config();
 
-	private final CodeSource codeSource;
-	private final CloseableHttpClient httpClient;
-	private final Build build;
-	private final File jar;
-	private final File dir;
-	private final Boolean prune;
-	private final Boolean console;
+  private final CodeSource codeSource;
+  private final CloseableHttpClient httpClient;
+  private final Build build;
+  private final File jar;
+  private final File dir;
+  private final Boolean prune;
+  private final Boolean console;
 
-	/**
-	 * Default constructor.
-	 */
-	public Config() {
-		this(new Properties(System.getProperties()));
-	}
+  /**
+   * Default constructor.
+   */
+  public Config() {
+    this(new Properties(System.getProperties()));
+  }
 
-	/**
-	 * Instantiates a Config with the specified Properties.
-	 * 
-	 * @param properties The Properties to initialize with.
-	 */
-	public Config(final Properties properties) {
+  /**
+   * Instantiates a Config with the specified Properties.
+   *
+   * @param properties The Properties to initialize with.
+   */
+  public Config(final Properties properties) {
 
-		final PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager();
-		connManager.setMaxTotal(12);
-		connManager.setDefaultMaxPerRoute(12);
+    final var connManager = new PoolingHttpClientConnectionManager();
+    connManager.setMaxTotal(12);
+    connManager.setDefaultMaxPerRoute(12);
 
-		httpClient = HttpClients.custom()
-				.setConnectionManager(connManager)
-				.build();
+    httpClient = HttpClients.custom()
+        .setConnectionManager(connManager)
+        .build();
 
-		codeSource = getClass().getProtectionDomain().getCodeSource();
-		jar = FileUtils.toFile(codeSource.getLocation());
+    codeSource = getClass().getProtectionDomain().getCodeSource();
+    jar = FileUtils.toFile(codeSource.getLocation());
 
-		if (properties.containsKey(BUILD)) {
-			build = Build.getBuild(properties.getProperty(BUILD));
-		} else {
-			build = Build.getHostBuild();
-		}
-		
-		if (properties.containsKey(DIR)) {
-			dir = new File(properties.getProperty(DIR));
-		} else {
-			dir = resolveDir();
-		}
+    if (properties.containsKey(BUILD)) {
+      build = Build.getBuild(properties.getProperty(BUILD));
+    } else {
+      build = Build.getHostBuild();
+    }
 
-		prune = Boolean.parseBoolean(properties.getProperty(PRUNE, "false"));
-		console = Boolean.parseBoolean(properties.getProperty(CONSOLE, "false"));
-	}
+    if (properties.containsKey(DIR)) {
+      dir = new File(properties.getProperty(DIR));
+    } else {
+      dir = resolveDir();
+    }
 
-	/**
-	 * @return The most appropriate default destination directory.
-	 */
-	private File resolveDir() {
-		
-		final File pwd = new File(SystemUtils.USER_DIR);
+    prune = Boolean.parseBoolean(properties.getProperty(PRUNE, "false"));
+    console = Boolean.parseBoolean(properties.getProperty(CONSOLE, "false"));
+  }
 
-		for (File file : new File[] { jar, pwd }) {			
-			do {
-				if (file.isDirectory()) {
-					switch (build) {
-					case x86_64_apple_darwin:
-						if (StringUtils.equalsIgnoreCase(file.getName(), "Quetoo.app")) {
-							return file;
-						}
-						break;
-					default:
-						if (StringUtils.equalsIgnoreCase(file.getName(), "Quetoo")
-								|| StringUtils.equalsIgnoreCase(file.getName(), "quetoo_java")) {
-							return file;
-						}
-						break;
-					}
-				}
-				
-				file = file.getParentFile();
-			} while (file != null);
-		}
-		
-		return new File(SystemUtils.USER_HOME, "quetoo_java");
-	}
+  public static Config getDefaults() {
+    return defaults;
+  }
 
-	/**
-	 * @return True if the executable jar resides within the destination directory.
-	 */
-	public Boolean shouldRelaunch() {
-		File file = getJar(), lib = getLib();
-		while (file != null) {
-			if (file.equals(lib)) {
-				return true;
-			}
-			file = file.getParentFile();
-		}
-		return false;
-	}
+  /**
+   * @return The most appropriate default destination directory.
+   */
+  private File resolveDir() {
 
-	public CodeSource getCodeSource() {
-		return codeSource;
-	}
+    var file = jar;
 
-	public File getJar() {
-		return jar;
-	}
+    do {
+      if (file.isDirectory()) {
+        switch (build) {
+          case arm64_apple_darwin:
+            if (Strings.CI.equals(file.getName(), "Quetoo.app")) {
+              return file;
+            }
+            break;
+          case x86_64_pc_linux:
+          case x86_64_pc_windows:
+            if (Strings.CI.equals(file.getName(), "Quetoo")) {
+              return file;
+            }
+            break;
+        }
+      }
 
-	public CloseableHttpClient getHttpClient() {
-		return httpClient;
-	}
+      file = file.getParentFile();
+    } while (file != null);
 
-	public Build getBuild() {
-		return build;
-	}
+    return switch (build) {
+      case arm64_apple_darwin -> Paths.get(SystemUtils.USER_HOME, "Library", "Application Support", "Quetoo").toFile();
+      case x86_64_pc_linux -> Paths.get(SystemUtils.USER_HOME, ".quetoo").toFile();
+      case x86_64_pc_windows -> Paths.get(System.getenv("APPDATA"), "Quetoo").toFile();
+    };
+  }
 
-	public File getDir() {
-		return dir;
-	}
+  /**
+   * @return True if the executable jar resides within the destination directory.
+   */
+  public Boolean shouldRelaunch() {
+    File file = getJar(), lib = getLib();
+    while (file != null) {
+      if (file.equals(lib)) {
+        return true;
+      }
+      file = file.getParentFile();
+    }
+    return false;
+  }
 
-	public File getBin() {
-		switch (build) {
-			case x86_64_apple_darwin:
-				return new File(getDir(), "Contents/MacOS");
-			default:
-				return new File(getDir(), "bin");
-		}
-	}
+  public CodeSource getCodeSource() {
+    return codeSource;
+  }
 
+  public File getJar() {
+    return jar;
+  }
 
-	public File getLib() {
-		switch (build) {
-			case x86_64_apple_darwin:
-				return new File(getDir(), "Contents/MacOS/lib");
-			default:
-				return new File(getDir(), "lib");
-		}
-	}
+  public CloseableHttpClient getHttpClient() {
+    return httpClient;
+  }
 
-	public File getData() {
-		switch (build) {
-			case x86_64_apple_darwin:
-				return new File(getDir(), "Contents/Resources");
-			default:
-				return new File(getDir(), "share");
-		}
-	}
+  public Build getBuild() {
+    return build;
+  }
 
-	public Boolean getPrune() {
-		return prune;
-	}
+  public File getDir() {
+    return dir;
+  }
 
-	public Boolean getConsole() {
-		return console;
-	}
+  public File getBin() {
+    switch (build) {
+      case arm64_apple_darwin:
+        return new File(getDir(), "Contents/MacOS");
+      default:
+        return new File(getDir(), "bin");
+    }
+  }
 
-	public static Config getDefaults() {
-		return defaults;
-	}
+  public File getLib() {
+    switch (build) {
+      case arm64_apple_darwin:
+        return new File(getDir(), "Contents/MacOS/lib");
+      default:
+        return new File(getDir(), "lib");
+    }
+  }
+
+  public File getData() {
+    switch (build) {
+      case arm64_apple_darwin:
+        return new File(getDir(), "Contents/Resources");
+      default:
+        return new File(getDir(), "share");
+    }
+  }
+
+  public Boolean getPrune() {
+    return prune;
+  }
+
+  public Boolean getConsole() {
+    return console;
+  }
 }
