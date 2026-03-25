@@ -19,6 +19,14 @@ $env:PATH = "$PWD\.tools\apache-maven-3.9.8\bin;$env:PATH"
 
 Verify with `mvn -version`.
 
+Note: `.mvn/jvm.config` includes `--enable-native-access=ALL-UNNAMED` to suppress Java 22+ warnings from Maven's internal libraries. Remaining guava/sisu warnings are harmless and will be resolved in Maven 4.0.
+
+When running Maven in PowerShell, pipe through `Out-Host` to avoid stderr warnings showing as red errors:
+
+```powershell
+mvn package -DskipTests 2>&1 | Out-Host
+```
+
 ## Build & Test
 
 ```bash
