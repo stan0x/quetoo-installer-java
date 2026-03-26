@@ -19,9 +19,6 @@ Thumbs.db
 .mvn/wrapper/maven-wrapper.jar
 
 # Downloaded/installed game files
-quetoo/
-quetoo-data/
-quetoo_java/
 bin/
 lib/
 share/

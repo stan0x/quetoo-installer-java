@@ -29,9 +29,8 @@ public class Frame extends JFrame {
     setContentPane(panel);
 
     pack();
+    setSize(960, getHeight());
     setLocationRelativeTo(null);
     setVisible(true);
-
-    SwingUtilities.invokeLater(panel::update);
   }
 }
