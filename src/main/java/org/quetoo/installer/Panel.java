@@ -12,6 +12,7 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serial;
 import java.io.StringWriter;
@@ -37,6 +38,7 @@ public class Panel extends JPanel {
   private final JTextArea summary;
   private final JButton copySummary;
   private final JButton pruneButton;
+  private final JButton playButton;
 
   private final List<Disposable> subscriptions = Collections.synchronizedList(new ArrayList<>());
   private final List<File> unknownAssets = Collections.synchronizedList(new ArrayList<>());
@@ -92,9 +94,14 @@ public class Panel extends JPanel {
       pruneButton.setEnabled(false);
       pruneButton.addActionListener(this::onPruneAction);
 
+      playButton = new JButton("Play");
+      playButton.setEnabled(false);
+      playButton.addActionListener(this::onPlayAction);
+
       final var buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
       buttons.add(copySummary);
       buttons.add(pruneButton);
+      buttons.add(playButton);
 
       panel.add(buttons, BorderLayout.EAST);
 
@@ -254,6 +261,7 @@ public class Panel extends JPanel {
     if (!unknownAssets.isEmpty() && !manager.getConfig().getPrune()) {
       pruneButton.setEnabled(true);
     }
+    playButton.setEnabled(true);
   }
 
   /**
@@ -283,5 +291,22 @@ public class Panel extends JPanel {
   private void onCopySummary(final ActionEvent e) {
     final Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
     clipboard.setContents(new StringSelection(summary.getText()), null);
+  }
+
+  /**
+   * Launches the Quetoo game executable.
+   */
+  private void onPlayAction(final ActionEvent e) {
+    try {
+      final var config = manager.getConfig();
+      final ProcessBuilder pb = switch (config.getBuild()) {
+        case arm64_apple_darwin -> new ProcessBuilder("open", config.getDir().getAbsolutePath());
+        case x86_64_pc_linux -> new ProcessBuilder(new File(config.getBin(), "quetoo").getAbsolutePath());
+        case x86_64_pc_windows -> new ProcessBuilder(new File(config.getBin(), "quetoo.exe").getAbsolutePath());
+      };
+      pb.start();
+    } catch (IOException ex) {
+      setStatus("Failed to launch: " + ex.getMessage());
+    }
   }
 }
