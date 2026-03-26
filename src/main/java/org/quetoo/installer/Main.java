@@ -125,7 +125,8 @@ public class Main {
     if (config.getConsole()) {
       new Console(new Manager(config));
     } else {
-      new Frame(new Manager(config));
+      final var heroLoader = HeroPanel.beginLoading(config.getHttpClient());
+      new Frame(new Manager(config), heroLoader);
     }
   }
 }

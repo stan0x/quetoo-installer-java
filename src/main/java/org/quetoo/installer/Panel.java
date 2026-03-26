@@ -46,7 +46,7 @@ public class Panel extends JPanel {
    *
    * @param manager The Manager.
    */
-  public Panel(final Manager manager) {
+  public Panel(final Manager manager, final HeroPanel.Loader heroLoader) {
 
     super(new BorderLayout(0, 5), true);
 
@@ -70,7 +70,7 @@ public class Panel extends JPanel {
     {
       final var panel = new JPanel(new BorderLayout(0, 10));
 
-      panel.add(new HeroPanel(manager.getConfig().getHttpClient(), this::update), BorderLayout.NORTH);
+      panel.add(new HeroPanel(heroLoader, this::update), BorderLayout.NORTH);
 
       final var statusPanel = new JPanel(new BorderLayout(0, 5));
       statusPanel.add(status, BorderLayout.NORTH);
