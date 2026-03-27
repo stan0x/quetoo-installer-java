@@ -3,6 +3,7 @@ package org.quetoo.installer;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
+import org.apache.commons.io.FileUtils;
 
 import javax.swing.*;
 import javax.swing.text.DefaultCaret;
@@ -11,6 +12,7 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serial;
 import java.io.StringWriter;
@@ -35,15 +37,18 @@ public class Panel extends JPanel {
   private final JLabel status;
   private final JTextArea summary;
   private final JButton copySummary;
+  private final JButton pruneButton;
+  private final JButton playButton;
 
   private final List<Disposable> subscriptions = Collections.synchronizedList(new ArrayList<>());
+  private final List<File> unknownAssets = Collections.synchronizedList(new ArrayList<>());
 
   /**
    * Instantiates a {@link Panel} with the specified {@link Manager}.
    *
    * @param manager The Manager.
    */
-  public Panel(final Manager manager) {
+  public Panel(final Manager manager, final HeroPanel.Loader heroLoader) {
 
     super(new BorderLayout(0, 5), true);
 
@@ -53,27 +58,26 @@ public class Panel extends JPanel {
     progressBar.setValue(0);
     progressBar.setStringPainted(true);
 
-    status = new JLabel("Retrieving asset list..");
+    status = new JLabel(" ");
 
     summary = new JTextArea(10, 40);
     summary.setMargin(new Insets(5, 5, 5, 5));
     summary.setEditable(false);
 
     summary.append("Updating " + manager.getConfig().getDir() + "\n");
-    summary.append("Retrieving asset list for " + manager.getConfig().getBuild() + "..\n");
 
     final var caret = (DefaultCaret) summary.getCaret();
     caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
     {
-      final var panel = new JPanel();
+      final var panel = new JPanel(new BorderLayout(0, 10));
 
-      panel.setLayout(new BorderLayout(0, 5));
+      panel.add(new HeroPanel(heroLoader, this::update), BorderLayout.NORTH);
 
-      panel.add(status, BorderLayout.NORTH);
-      panel.add(progressBar, BorderLayout.SOUTH);
-
-      panel.setSize(panel.getPreferredSize());
+      final var statusPanel = new JPanel(new BorderLayout(0, 5));
+      statusPanel.add(status, BorderLayout.NORTH);
+      statusPanel.add(progressBar, BorderLayout.SOUTH);
+      panel.add(statusPanel, BorderLayout.SOUTH);
 
       add(panel, BorderLayout.PAGE_START);
     }
@@ -86,7 +90,20 @@ public class Panel extends JPanel {
       copySummary = new JButton("Copy Summary");
       copySummary.addActionListener(this::onCopySummary);
 
-      panel.add(copySummary, BorderLayout.EAST);
+      pruneButton = new JButton("Prune");
+      pruneButton.setEnabled(false);
+      pruneButton.addActionListener(this::onPruneAction);
+
+      playButton = new JButton("Play");
+      playButton.setEnabled(false);
+      playButton.addActionListener(this::onPlayAction);
+
+      final var buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+      buttons.add(copySummary);
+      buttons.add(pruneButton);
+      buttons.add(playButton);
+
+      panel.add(buttons, BorderLayout.EAST);
 
       add(panel, BorderLayout.PAGE_END);
     }
@@ -106,6 +123,8 @@ public class Panel extends JPanel {
    * Dispatches {@link Manager#sync(Observable)}.
    */
   public void update() {
+
+    setStatus("Retrieving asset list for " + manager.getConfig().getBuild() + "..");
 
     progressBar.setValue(0);
     progressBar.setMaximum(0);
@@ -206,10 +225,12 @@ public class Panel extends JPanel {
 
     progressBar.setValue(progressBar.getMaximum());
 
+    unknownAssets.clear();
+
     Schedulers.io().scheduleDirect(() -> {
       final var prune = manager.prune()
           .observeOn(Schedulers.from(SwingUtilities::invokeLater))
-          .subscribe(this::onPrune, this::onError);
+          .subscribe(this::onPrune, this::onError, this::onPruneComplete);
       subscriptions.add(prune);
     });
   }
@@ -220,6 +241,8 @@ public class Panel extends JPanel {
    * @param file The File.
    */
   private void onPrune(final File file) {
+
+    unknownAssets.add(file);
 
     final var dir = manager.getConfig().getDir() + File.separator;
     final var filename = file.toString().replace(dir, "");
@@ -232,10 +255,58 @@ public class Panel extends JPanel {
   }
 
   /**
+   * Called when prune discovery completes, enabling the Prune button if unknown assets were found.
+   */
+  private void onPruneComplete() {
+    if (!unknownAssets.isEmpty() && !manager.getConfig().getPrune()) {
+      pruneButton.setEnabled(true);
+    }
+    playButton.setEnabled(true);
+  }
+
+  /**
+   * Deletes unknown assets discovered during the prune phase.
+   */
+  private void onPruneAction(final ActionEvent e) {
+
+    pruneButton.setEnabled(false);
+
+    for (final var file : unknownAssets) {
+      FileUtils.deleteQuietly(file);
+
+      final var dir = manager.getConfig().getDir() + File.separator;
+      final var filename = file.toString().replace(dir, "");
+
+      setStatus("Removed " + filename);
+    }
+
+    unknownAssets.clear();
+
+    setStatus("Prune complete");
+  }
+
+  /**
    * Copies the contents of `summary` to the clipboard.
    */
   private void onCopySummary(final ActionEvent e) {
     final Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
     clipboard.setContents(new StringSelection(summary.getText()), null);
+  }
+
+  /**
+   * Launches the Quetoo game executable.
+   */
+  private void onPlayAction(final ActionEvent e) {
+    try {
+      final var config = manager.getConfig();
+      final ProcessBuilder pb = switch (config.getBuild()) {
+        case arm64_apple_darwin -> new ProcessBuilder("open", config.getDir().getAbsolutePath());
+        case x86_64_pc_linux -> new ProcessBuilder(new File(config.getBin(), "quetoo").getAbsolutePath());
+        case x86_64_pc_windows -> new ProcessBuilder(new File(config.getBin(), "quetoo.exe").getAbsolutePath());
+      };
+      pb.start();
+    } catch (IOException ex) {
+      setStatus("Failed to launch: " + ex.getMessage());
+    }
   }
 }

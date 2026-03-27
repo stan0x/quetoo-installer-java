@@ -18,20 +18,19 @@ public class Frame extends JFrame {
    *
    * @param manager The Manager.
    */
-  public Frame(final Manager manager) {
+  public Frame(final Manager manager, final HeroPanel.Loader heroLoader) {
 
     super(Config.NAME + " " + Config.VERSION);
 
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-    final var panel = new Panel(manager);
+    final var panel = new Panel(manager, heroLoader);
 
     setContentPane(panel);
 
     pack();
+    setSize(960, getHeight());
     setLocationRelativeTo(null);
     setVisible(true);
-
-    SwingUtilities.invokeLater(panel::update);
   }
 }
